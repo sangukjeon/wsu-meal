@@ -64,10 +64,11 @@ function cafeteriasOf(day) {
   return open.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
 }
 
-// 오늘이면 지금 시간에 맞는 끼니 (조식·중식·석식 코너가 있을 때만)
+// 오늘이면 지금 시간에 맞는 끼니 (조식·중식·석식 코너가 있을 때만, 야간에는 미표시)
 function nowCorner(corners) {
   if (state.date !== today) return null
   const hour = kstHour()
+  if (hour >= 20) return null
   const want = hour < 10 ? '조식' : hour < 14 ? '중식' : '석식'
   return corners.includes(want) ? want : null
 }
@@ -150,16 +151,17 @@ function renderDay(day) {
   // 고른 식당 탭이 화면 밖이면 보이게 밀어 준다
   $tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 
-  const corners = Object.entries(day[picked])
+  const corners = Object.entries(day?.[picked] ?? {})
   const current = nowCorner(corners.map(([name]) => name))
   const list = el('ul', 'corners')
   for (const [corner, menu] of corners) {
-    const [main, ...sides] = menu
+    const items = Array.isArray(menu) ? menu : (menu ? [menu] : [])
+    const [main, ...sides] = items
     const item = el('li', corner === current ? 'corner corner--now' : 'corner')
     const head = el('p', 'corner__head')
     head.append(el('span', 'corner__name', corner))
     if (corner === current) head.append(el('span', 'now', '지금'))
-    item.append(head, el('p', 'main', main))
+    item.append(head, el('p', 'main', main || '등록된 메뉴가 없어요'))
     if (sides.length > 0) {
       const ul = el('ul', 'sides')
       ul.append(...sides.map((s) => el('li', null, s)))
